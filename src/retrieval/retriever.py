@@ -232,7 +232,6 @@ class Retriever:
         }
     
     def get_retriever_stats(self) -> Dict[str, Any]:
-        """Get statistics about the retriever"""
         return {
             "vector_store": self.vector_store.get_stats(),
             "embedding_model": self.embedding_model.get_model_info(),
@@ -250,7 +249,6 @@ class Retriever:
         }
     
     def reset_index(self) -> bool:
-        """Reset the vector store index"""
         logger.warning("Resetting vector store index...")
         success = self.vector_store.reset_collection()
         if success:
