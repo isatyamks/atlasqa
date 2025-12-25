@@ -13,7 +13,6 @@ logger = get_logger(__name__)
 
 
 class IngestionPipeline:
-    """Orchestrates the complete ingestion process"""
     
     def __init__(self):
         self.file_handler = FileHandler()
@@ -117,7 +116,6 @@ class IngestionPipeline:
         parsed_doc: ParsedDocument,
         strategy: str
     ) -> List[TextChunk]:
-        """Chunk a parsed document using specified strategy"""
         if strategy == "sentence_based":
             chunks = self.chunker.chunk_by_sentences(
                 parsed_doc.content,
@@ -144,7 +142,6 @@ class IngestionPipeline:
         parsed_doc: ParsedDocument,
         chunks: List[TextChunk]
     ) -> None:
-        """Save processed data to disk"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename_base = parsed_doc.file_path.stem
@@ -169,7 +166,6 @@ class IngestionPipeline:
             logger.error(f"Error saving processed data: {e}")
     
     def get_ingestion_stats(self) -> Dict[str, Any]:
-        """Get ingestion statistics"""
         return {
             "files_ingested": metrics_collector.get_counter("files_ingested"),
             "chunks_created": metrics_collector.get_counter("chunks_created"),
@@ -183,7 +179,6 @@ class IngestionPipeline:
         }
     
     def clear_processed_data(self) -> int:
-        """Clear all processed data"""
         from src.utils import clean_directory
         
         count = 0

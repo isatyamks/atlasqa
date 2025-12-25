@@ -31,18 +31,15 @@ class LLMClient:
         logger.info(f"LLMClient initialized: {self.provider} - {self.model}")
     
     def _detect_provider(self) -> str:
-        """Detect which provider to use based on available API keys"""
         if settings.GROQ_API_KEY:
             return LLMProvider.GROQ.value
         else:
             raise ValueError("GROQ_API_KEY not found. Only Groq is supported.")
     
     def _get_default_model(self) -> str:
-        """Get default model for current provider"""
         return settings.GROQ_MODEL or "llama-3.3-70b-versatile"
     
     def _initialize_client(self):
-        """Initialize the LLM client based on provider"""
         try:
             if self.provider == LLMProvider.GROQ.value:
                 self._initialize_groq()
@@ -53,7 +50,6 @@ class LLMClient:
             raise
     
     def _initialize_groq(self):
-        """Initialize Groq client"""
         try:
             from groq import Groq
             
@@ -93,7 +89,6 @@ class LLMClient:
         temperature: float,
         max_tokens: int
     ) -> Dict[str, Any]:
-        """Generate using Groq"""
         messages = []
         
         if system_prompt:
@@ -120,7 +115,6 @@ class LLMClient:
         }
     
     def get_client_info(self) -> Dict[str, Any]:
-        """Get information about the LLM client"""
         return {
             "provider": self.provider,
             "model": self.model,
