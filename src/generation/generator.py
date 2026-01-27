@@ -247,10 +247,12 @@ class Generator:
                 
                 # Save to session
                 if session_id:
+                     titles = [tc.get("title", "Untitled") for tc in test_cases.get("test_cases", [])]
+                     summary = f"Generated {len(titles)} test cases: {', '.join(titles)}"
                      self.session_manager.add_turn(
                         session_id, 
                         query, 
-                        f"Generated {len(test_cases.get('test_cases', []))} test cases"
+                        summary
                     )
 
                 logger.info(f"Generated {len(test_cases['test_cases'])} test cases")
