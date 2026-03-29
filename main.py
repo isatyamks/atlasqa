@@ -100,6 +100,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
             
             file_path = settings.upload_path / file.filename
             
+            # Ensure upload directory exists
+            settings.upload_path.mkdir(parents=True, exist_ok=True)
+            
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             
