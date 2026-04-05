@@ -52,10 +52,7 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_RELOAD: bool = True
     LOG_LEVEL: str = "info"
-    
-    TESSERACT_PATH: str = "/usr/bin/tesseract"
-    OCR_LANGUAGE: str = "eng"
-    USE_EASYOCR: bool = False
+
     
     BATCH_SIZE: int = 32
     MAX_WORKERS: int = 4

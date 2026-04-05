@@ -7,7 +7,6 @@ import shutil
 
 from src.config import settings
 from src.generation import Generator
-from src.retrieval import Retriever
 from src.utils import get_logger
 
 logger = get_logger(__name__)
@@ -23,18 +22,16 @@ app.add_middleware(
 )
 
 generator = None
-retriever = None
 
 
 @app.on_event("startup")
 async def startup_event():
-    global generator, retriever
+    global generator
     
     logger.info("Starting DevAssure RAG API...")
     
     try:
         generator = Generator()
-        retriever = Retriever()
         
         logger.info("API initialized successfully")
     except Exception as e:
@@ -62,13 +59,12 @@ async def root():
 @app.get("/health")
 async def health_check():
     try:
-        stats = retriever.get_retriever_stats()
+        stats = generator.retriever.get_retriever_stats()
         
         return {
             "status": "healthy",
             "components": {
                 "generator": generator is not None,
-                "retriever": retriever is not None,
             },
             "statistics": stats
         }
@@ -106,7 +102,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
             uploaded_paths.append(file_path)
             logger.info(f"Uploaded: {file.filename}")
         
-        result = retriever.index_documents(uploaded_paths)
+        result = generator.retriever.index_documents(uploaded_paths)
         
         return {
             "success": True,
@@ -154,11 +150,9 @@ async def query_system(
 @app.get("/stats")
 async def get_stats():
     try:
-        retriever_stats = retriever.get_retriever_stats()
         generator_stats = generator.get_generator_stats()
         
         return {
-            "retriever": retriever_stats,
             "generator": generator_stats
         }
     except Exception as e:
@@ -170,7 +164,7 @@ async def get_stats():
 async def reset_index():
     try:
         logger.warning("Resetting index...")
-        retriever.reset_index()
+        generator.retriever.reset_index()
         
         return {
             "success": True,
