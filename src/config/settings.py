@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     REQUIRE_JSON_MODE: bool = True
     
     UPLOAD_DIR: str = "./data/uploads"
+    MONGO_URI: str = "mongodb://localhost:27017/"
+    MONGO_DB_NAME: str = "multimodal_rag"
     MAX_FILE_SIZE: int = 10485760
     ALLOWED_EXTENSIONS: str = ".txt,.md,.pdf,.docx,.png,.jpg,.jpeg"
     
