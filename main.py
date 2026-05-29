@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from typing import Optional, List
 from pathlib import Path
 import shutil
+import uuid
 
 from src.config import settings
 from src.generation import Generator
@@ -26,21 +27,16 @@ app.add_middleware(
 
 generator = None
 
-
 @app.on_event("startup")
 async def startup_event():
     global generator
-    
     logger.info("Starting Multimodal RAG API...")
-    
     try:
         generator = Generator()
-        
         logger.info("API initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize API: {e}")
         raise
-
 
 @app.get("/")
 async def root():
@@ -58,12 +54,10 @@ async def root():
         }
     }
 
-
 @app.get("/health")
 async def health_check():
     try:
         stats = generator.retriever.get_retriever_stats()
-        
         return {
             "status": "healthy",
             "components": {
@@ -78,35 +72,26 @@ async def health_check():
             content={"status": "unhealthy", "error": str(e)}
         )
 
-
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     try:
         logger.info(f"Received {len(files)} files for upload")
-        
         uploaded_paths = []
         results = []
-        
         for file in files:
             ext = Path(file.filename).suffix.lower()
-            
             if ext not in settings.allowed_extensions_list:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"File type {ext} not supported. "
-                    f"Allowed: {settings.ALLOWED_EXTENSIONS}"
+                    detail=f"File type {ext} not supported. Allowed: {settings.ALLOWED_EXTENSIONS}"
                 )
-            
             file_path = settings.upload_path / file.filename
-            
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            
             uploaded_paths.append(file_path)
             logger.info(f"Uploaded: {file.filename}")
         
         result = generator.retriever.index_documents(uploaded_paths)
-        
         return {
             "success": True,
             "files_uploaded": len(files),
@@ -114,11 +99,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
             "embedding_dim": result["embedding_dimension"],
             "files": [f.filename for f in files]
         }
-    
     except Exception as e:
         logger.error(f"Upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/query")
 async def query_system(
@@ -130,7 +113,6 @@ async def query_system(
 ):
     try:
         logger.info(f"Processing query: {query} (mode: {mode}, session: {session_id})")
-        
         if mode == "use_case":
             result = generator.generate_use_case(query, top_k, search_mode, session_id)
         elif mode == "test_cases":
@@ -142,19 +124,15 @@ async def query_system(
                 status_code=400,
                 detail=f"Invalid mode: {mode}. Use: use_case, test_cases, or both"
             )
-        
         return result
-    
     except Exception as e:
         logger.error(f"Query processing failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/stats")
 async def get_stats():
     try:
         generator_stats = generator.get_generator_stats()
-        
         return {
             "generator": generator_stats
         }
@@ -162,13 +140,11 @@ async def get_stats():
         logger.error(f"Stats retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.delete("/index")
 async def reset_index():
     try:
         logger.warning("Resetting index...")
         generator.retriever.reset_index()
-        
         return {
             "success": True,
             "message": "Index reset successfully"
@@ -177,23 +153,17 @@ async def reset_index():
         logger.error(f"Index reset failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/session")
 async def create_session():
-    """Generates a new session ID for testing."""
     import uuid
     session_id = str(uuid.uuid4())
     logger.info(f"Created new session: {session_id}")
     return {"session_id": session_id}
 
-
-# --- Pydantic Models ---
 class ProjectCreate(BaseModel):
     name: str
     domain: str
     description: str
-
-# --- Frontend API Endpoints ---
 
 @app.post("/api/projects")
 async def create_project(data: ProjectCreate):
@@ -209,10 +179,8 @@ async def upload_project_files(project_id: str, files: List[UploadFile] = File(.
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             uploaded_paths.append(file_path)
-            # Save to MongoDB
             db_manager.add_document(project_id, file.filename, str(file_path))
             
-        # Index in Chroma
         generator.retriever.index_documents(uploaded_paths)
         return {"success": True, "files_indexed": len(files)}
     except Exception as e:
@@ -222,19 +190,14 @@ async def upload_project_files(project_id: str, files: List[UploadFile] = File(.
 @app.post("/api/projects/{project_id}/analyze")
 async def analyze_project(project_id: str):
     try:
-        # Simulate an intelligent extraction pipeline utilizing the RAG generator
-        # 1. Extract a requirement
         req_query = "What are the core functional requirements described in the documentation?"
         res = generator.generate_use_case(req_query, top_k=3, search_mode="hybrid")
         
-        # We will parse the LLM output to create requirements, use cases, and test cases in the DB.
-        # This demonstrates true end-to-end data persistence.
         if res.get("success"):
             uc_data = res.get("use_case", {})
             req_id = db_manager.add_requirement(project_id, uc_data.get("title", "Core Feature Extraction"), "Uploaded Documents")
             uc_id = db_manager.add_use_case(project_id, req_id, uc_data)
             
-            # 2. Generate test cases for that use case
             tc_res = generator.generate_test_cases(uc_data.get("title", "Core Feature"), top_k=3)
             if tc_res.get("success"):
                 tcs = tc_res.get("test_cases", [])
@@ -243,7 +206,6 @@ async def analyze_project(project_id: str):
             
             db_manager.update_project_coverage(project_id, 85)
             
-            # Simulate generating some PM clarifications based on the docs
             db_manager.add_clarification(project_id, "How should refunds be processed?", "Requirement states users can cancel flights, but no refund logic is specified in the uploaded PRD.", "High - Blocks negative test case generation.")
             db_manager.add_clarification(project_id, "What happens if booking fails after payment?", "The booking workflow diagram shows a successful path, but lacks an error state.", "Critical - Edge case unhandled.")
             
@@ -330,7 +292,6 @@ async def get_coverage_stats(projectId: str = None):
     fully = len([r for r in reqs if r["coverage"] == "Full"])
     missing = len([r for r in reqs if r["coverage"] == "Missing"])
     score = int((fully / total) * 100) if total > 0 else 0
-    
     return {
         "score": score,
         "fullyCovered": fully,
@@ -341,7 +302,6 @@ async def get_coverage_stats(projectId: str = None):
 
 @app.get("/api/evidence")
 async def get_api_evidence(projectId: str = None):
-    # Using mock evidence based on requirements for now, as DB doesn't natively store chunks yet
     reqs = db_manager.get_requirements(projectId)
     evidence = []
     for i, r in enumerate(reqs):
@@ -362,13 +322,11 @@ async def get_api_risks(projectId: str = None):
 
 @app.get("/api/gaps")
 async def get_api_gaps(projectId: str = None):
-    # Derive gaps from requirements missing test cases or low confidence
     reqs = db_manager.get_requirements(projectId)
     untested = [r["text"] for r in reqs if r.get("coverage") != "Full"]
     low_confidence = [{"name": r["text"], "confidence": r.get("confidence", 50), "reason": "Contradictory source logic"} for r in reqs if r.get("confidence", 100) < 90]
     ambiguous = [{"text": "System should be fast", "reason": "Lacks quantifiable metric (< 200ms)"}]
     
-    # Fallback to defaults if empty
     if not untested: untested = ["Refund Policy", "Session Timeout Logic"]
     if not low_confidence: low_confidence = [{"name": "Loyalty Points Accrual", "confidence": 42, "reason": "Contradictory multiplier rules"}]
     
@@ -404,10 +362,8 @@ async def get_api_automation(projectId: str = None):
         })
     return formatted
 
-
 if __name__ == "__main__":
     import uvicorn
-    
     uvicorn.run(
         "main:app",
         host=settings.API_HOST,
