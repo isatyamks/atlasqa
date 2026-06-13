@@ -18,45 +18,66 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
 venv/
 env/
 ENV/
 .venv
+
 .env
 .env.local
+
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-docs/
 .DS_Store
+
+# Data directories (ignore all data except .gitkeeps)
+data/
+data1/
 !data/uploads/.gitkeep
 !data/processed/.gitkeep
 !data/vector_store/.gitkeep
-!data/cache/.gitkeep*.log
-data
+!data/cache/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Testing / Typing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 .hypothesis/
+.mypy_cache/
+
+# Databases
 chroma.db/
 *.db
 *.sqlite3
+Thumbs.db
+
+# Jupyter
 .ipynb_checkpoints
 *.ipynb
-Thumbs.db
+
 desktop.ini
 *.tmp
 *.temp
 tmp/
 temp/
+
+# ML Models / Weights
 models/
 *.bin
 *.h5
 *.pkl
 *.pth
+
+# Secrets
 secrets/
 credentials/
 *.key
